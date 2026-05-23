@@ -11,6 +11,7 @@ const navItems = [
   { id: "home", label: "Главная", icon: "LayoutDashboard" },
   { id: "tickets", label: "Талоны", icon: "Ticket" },
   { id: "queue", label: "Табло очереди", icon: "Monitor" },
+  { id: "operator", label: "Рабочее место", icon: "UserCog" },
   { id: "settings", label: "Настройки", icon: "Settings" },
 ];
 
