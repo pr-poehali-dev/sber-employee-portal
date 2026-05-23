@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { useQueueStore, SERVICE_COLORS, SERVICE_NAMES } from "@/hooks/useQueueStore";
-import { playCallSound, playDoneSound } from "@/hooks/useQueueSound";
+import { playCallSound, playDoneSound, announceTicket } from "@/hooks/useQueueSound";
 
 const MY_WINDOW_ID = 2; // Окно текущего оператора (Кузнецов А.В.)
 
@@ -14,6 +14,7 @@ export default function Operator() {
   const [timer, setTimer] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   const myWindow = windows.find((w) => w.id === MY_WINDOW_ID)!;
   const myClient = queue.find(
@@ -42,6 +43,7 @@ export default function Operator() {
       setTimerActive(true);
       setTimeout(() => setFlash(false), 1200);
       if (soundEnabled) playCallSound();
+      if (voiceEnabled) announceTicket(entry.number, MY_WINDOW_ID);
     }
   };
 
@@ -109,14 +111,24 @@ export default function Operator() {
             title={soundEnabled ? "Звук включён" : "Звук выключен"}
             className="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
             style={{
-              background: soundEnabled
-                ? "hsl(145 63% 24%)"
-                : "hsl(var(--sidebar-accent))",
+              background: soundEnabled ? "hsl(145 63% 24%)" : "hsl(var(--sidebar-accent))",
               color: soundEnabled ? "hsl(145 63% 62%)" : "hsl(var(--sidebar-foreground))",
               border: `1px solid ${soundEnabled ? "hsl(145 63% 32%)" : "hsl(var(--sidebar-border))"}`,
             }}
           >
             <Icon name={soundEnabled ? "Volume2" : "VolumeX"} size={15} />
+          </button>
+          <button
+            onClick={() => setVoiceEnabled((v) => !v)}
+            title={voiceEnabled ? "Голос включён" : "Голос выключен"}
+            className="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+            style={{
+              background: voiceEnabled ? "hsl(215 70% 24%)" : "hsl(var(--sidebar-accent))",
+              color: voiceEnabled ? "hsl(215 80% 72%)" : "hsl(var(--sidebar-foreground))",
+              border: `1px solid ${voiceEnabled ? "hsl(215 70% 38%)" : "hsl(var(--sidebar-border))"}`,
+            }}
+          >
+            <Icon name={voiceEnabled ? "Mic2" : "MicOff"} size={15} />
           </button>
           <button
             onClick={() => toggleWindow(MY_WINDOW_ID)}

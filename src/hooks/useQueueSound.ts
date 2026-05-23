@@ -1,3 +1,44 @@
+// Голосовое объявление через Web Speech API
+const SERVICE_VOICE: Record<string, string> = {
+  A: "А",
+  B: "Б",
+  C: "В",
+  D: "Г",
+  E: "Д",
+  F: "Е",
+};
+
+export function announceTicket(ticketNumber: string, windowId: number) {
+  try {
+    if (!("speechSynthesis" in window)) return;
+
+    window.speechSynthesis.cancel();
+
+    const letter = ticketNumber[0];
+    const digits = ticketNumber.slice(1).replace(/^0+/, "") || "ноль";
+    const voiceLetter = SERVICE_VOICE[letter] || letter;
+    const text = `Талон ${voiceLetter} — ${digits}. Пройдите к окну ${windowId}.`;
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "ru-RU";
+    utter.rate = 0.88;
+    utter.pitch = 1.05;
+    utter.volume = 1;
+
+    // Выбираем русский голос если доступен
+    const voices = window.speechSynthesis.getVoices();
+    const ruVoice = voices.find(
+      (v) => v.lang.startsWith("ru") || v.name.toLowerCase().includes("russian")
+    );
+    if (ruVoice) utter.voice = ruVoice;
+
+    // Небольшая пауза после сигнала — объявление звучит после тонов
+    setTimeout(() => window.speechSynthesis.speak(utter), 750);
+  } catch {
+    // молча игнорируем
+  }
+}
+
 // Синтез звука через Web Audio API — без файлов и зависимостей
 export function playCallSound() {
   try {
