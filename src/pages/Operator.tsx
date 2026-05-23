@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { useQueueStore, SERVICE_COLORS, SERVICE_NAMES } from "@/hooks/useQueueStore";
+import { playCallSound, playDoneSound } from "@/hooks/useQueueSound";
 
 const MY_WINDOW_ID = 2; // Окно текущего оператора (Кузнецов А.В.)
 
@@ -12,6 +13,7 @@ export default function Operator() {
   const [lastCalled, setLastCalled] = useState<string | null>(null);
   const [timer, setTimer] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const myWindow = windows.find((w) => w.id === MY_WINDOW_ID)!;
   const myClient = queue.find(
@@ -39,6 +41,7 @@ export default function Operator() {
       setTimer(0);
       setTimerActive(true);
       setTimeout(() => setFlash(false), 1200);
+      if (soundEnabled) playCallSound();
     }
   };
 
@@ -47,6 +50,7 @@ export default function Operator() {
     setLastCalled(null);
     setTimerActive(false);
     setTimer(0);
+    if (soundEnabled) playDoneSound();
   };
 
   const formatTimer = (s: number) => {
@@ -99,17 +103,33 @@ export default function Operator() {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => toggleWindow(MY_WINDOW_ID)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-          style={{
-            background: myWindow.open ? "hsl(0 72% 45%)" : "hsl(145 63% 32%)",
-            color: "#fff",
-          }}
-        >
-          <Icon name={myWindow.open ? "DoorClosed" : "DoorOpen"} size={15} />
-          {myWindow.open ? "Закрыть окно" : "Открыть окно"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSoundEnabled((s) => !s)}
+            title={soundEnabled ? "Звук включён" : "Звук выключен"}
+            className="flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+            style={{
+              background: soundEnabled
+                ? "hsl(145 63% 24%)"
+                : "hsl(var(--sidebar-accent))",
+              color: soundEnabled ? "hsl(145 63% 62%)" : "hsl(var(--sidebar-foreground))",
+              border: `1px solid ${soundEnabled ? "hsl(145 63% 32%)" : "hsl(var(--sidebar-border))"}`,
+            }}
+          >
+            <Icon name={soundEnabled ? "Volume2" : "VolumeX"} size={15} />
+          </button>
+          <button
+            onClick={() => toggleWindow(MY_WINDOW_ID)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: myWindow.open ? "hsl(0 72% 45%)" : "hsl(145 63% 32%)",
+              color: "#fff",
+            }}
+          >
+            <Icon name={myWindow.open ? "DoorClosed" : "DoorOpen"} size={15} />
+            {myWindow.open ? "Закрыть окно" : "Открыть окно"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-5">
