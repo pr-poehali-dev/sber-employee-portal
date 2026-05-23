@@ -21,16 +21,22 @@ export function announceTicket(ticketNumber: string, windowId: number) {
 
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ru-RU";
-    utter.rate = 0.88;
-    utter.pitch = 1.05;
-    utter.volume = 1;
 
-    // Выбираем русский голос если доступен
-    const voices = window.speechSynthesis.getVoices();
-    const ruVoice = voices.find(
-      (v) => v.lang.startsWith("ru") || v.name.toLowerCase().includes("russian")
-    );
-    if (ruVoice) utter.voice = ruVoice;
+    // Читаем сохранённые настройки из localStorage
+    utter.volume = parseFloat(localStorage.getItem("voice_volume") ?? "1");
+    utter.rate   = parseFloat(localStorage.getItem("voice_rate")   ?? "0.88");
+    utter.pitch  = parseFloat(localStorage.getItem("voice_pitch")  ?? "1.05");
+
+    const savedName = localStorage.getItem("voice_name");
+    if (savedName) {
+      const voices = window.speechSynthesis.getVoices();
+      const saved = voices.find((v) => v.name === savedName);
+      if (saved) utter.voice = saved;
+    } else {
+      const voices = window.speechSynthesis.getVoices();
+      const ruVoice = voices.find((v) => v.lang.startsWith("ru"));
+      if (ruVoice) utter.voice = ruVoice;
+    }
 
     // Небольшая пауза после сигнала — объявление звучит после тонов
     setTimeout(() => window.speechSynthesis.speak(utter), 750);

@@ -123,24 +123,36 @@ export default function Settings() {
   const [exportFormat, setExportFormat] = useState("xlsx");
   const [exportEncoding, setExportEncoding] = useState("utf8");
 
-  // Голос
+  // Голос — загружаем из localStorage
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState("");
-  const [volume, setVolume] = useState(1);
-  const [rate, setRate] = useState(0.88);
-  const [pitch, setPitch] = useState(1.05);
+  const [selectedVoice, setSelectedVoice] = useState(
+    () => localStorage.getItem("voice_name") ?? ""
+  );
+  const [volume, setVolume] = useState(
+    () => parseFloat(localStorage.getItem("voice_volume") ?? "1")
+  );
+  const [rate, setRate] = useState(
+    () => parseFloat(localStorage.getItem("voice_rate") ?? "0.88")
+  );
+  const [pitch, setPitch] = useState(
+    () => parseFloat(localStorage.getItem("voice_pitch") ?? "1.05")
+  );
 
   useEffect(() => {
     const load = () => {
       const list = window.speechSynthesis?.getVoices() ?? [];
       const ru = list.filter((v) => v.lang.startsWith("ru"));
-      setVoices(ru.length ? ru : list.slice(0, 8));
-      if (!selectedVoice && ru[0]) setSelectedVoice(ru[0].name);
+      const available = ru.length ? ru : list.slice(0, 8);
+      setVoices(available);
+      // Если голос ещё не выбран — берём первый русский
+      if (!localStorage.getItem("voice_name") && available[0]) {
+        setSelectedVoice(available[0].name);
+      }
     };
     load();
     window.speechSynthesis?.addEventListener("voiceschanged", load);
     return () => window.speechSynthesis?.removeEventListener("voiceschanged", load);
-  }, [selectedVoice]);
+  }, []);
 
   const handleTestVoice = () => {
     try {
@@ -157,6 +169,11 @@ export default function Settings() {
   };
 
   const handleSave = () => {
+    // Сохраняем настройки голоса в localStorage
+    localStorage.setItem("voice_name", selectedVoice);
+    localStorage.setItem("voice_volume", String(volume));
+    localStorage.setItem("voice_rate", String(rate));
+    localStorage.setItem("voice_pitch", String(pitch));
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
