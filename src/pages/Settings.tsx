@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
 
 const Section = ({
   title,
@@ -121,6 +122,39 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [exportFormat, setExportFormat] = useState("xlsx");
   const [exportEncoding, setExportEncoding] = useState("utf8");
+
+  // Голос
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState("");
+  const [volume, setVolume] = useState(1);
+  const [rate, setRate] = useState(0.88);
+  const [pitch, setPitch] = useState(1.05);
+
+  useEffect(() => {
+    const load = () => {
+      const list = window.speechSynthesis?.getVoices() ?? [];
+      const ru = list.filter((v) => v.lang.startsWith("ru"));
+      setVoices(ru.length ? ru : list.slice(0, 8));
+      if (!selectedVoice && ru[0]) setSelectedVoice(ru[0].name);
+    };
+    load();
+    window.speechSynthesis?.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis?.removeEventListener("voiceschanged", load);
+  }, [selectedVoice]);
+
+  const handleTestVoice = () => {
+    try {
+      window.speechSynthesis?.cancel();
+      const utter = new SpeechSynthesisUtterance("Талон А — четырнадцать. Пройдите к окну два.");
+      utter.lang = "ru-RU";
+      utter.volume = volume;
+      utter.rate = rate;
+      utter.pitch = pitch;
+      const voice = voices.find((v) => v.name === selectedVoice);
+      if (voice) utter.voice = voice;
+      window.speechSynthesis?.speak(utter);
+    } catch { /* молча */ }
+  };
 
   const handleSave = () => {
     setSaved(true);
@@ -304,6 +338,110 @@ export default function Settings() {
           >
             Выгрузка доступна на главной странице — кнопка «Выгрузить» в таблице задач
           </span>
+        </div>
+      </Section>
+
+      {/* Voice & Sound */}
+      <Section title="Голос и звук очереди" icon="Mic2">
+        <div className="space-y-5">
+          {/* Voice selector */}
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>
+              Голос объявления
+            </label>
+            {voices.length > 0 ? (
+              <select
+                value={selectedVoice}
+                onChange={(e) => setSelectedVoice(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{
+                  background: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  color: "hsl(var(--foreground))",
+                }}
+              >
+                {voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div
+                className="px-3 py-2 rounded-lg text-sm"
+                style={{
+                  background: "hsl(var(--muted))",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              >
+                Голоса загружаются... (разрешите доступ в браузере)
+              </div>
+            )}
+          </div>
+
+          {/* Sliders */}
+          <div className="grid grid-cols-3 gap-5">
+            {[
+              { label: "Громкость", value: volume, min: 0, max: 1, step: 0.05, set: setVolume, fmt: (v: number) => `${Math.round(v * 100)}%` },
+              { label: "Скорость речи", value: rate, min: 0.5, max: 2, step: 0.05, set: setRate, fmt: (v: number) => `${v.toFixed(2)}x` },
+              { label: "Тон голоса", value: pitch, min: 0.5, max: 2, step: 0.05, set: setPitch, fmt: (v: number) => v.toFixed(2) },
+            ].map((s) => (
+              <div key={s.label}>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium" style={{ color: "hsl(var(--muted-foreground))" }}>
+                    {s.label}
+                  </label>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded"
+                    style={{ background: "hsl(var(--accent))", color: "hsl(var(--primary))" }}
+                  >
+                    {s.fmt(s.value)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={s.min}
+                  max={s.max}
+                  step={s.step}
+                  value={s.value}
+                  onChange={(e) => s.set(parseFloat(e.target.value))}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    accentColor: "hsl(var(--primary))",
+                    background: `linear-gradient(to right, hsl(var(--primary)) ${((s.value - s.min) / (s.max - s.min)) * 100}%, hsl(var(--border)) 0%)`,
+                  }}
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>{s.fmt(s.min)}</span>
+                  <span className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>{s.fmt(s.max)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Test button */}
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              onClick={handleTestVoice}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+            >
+              <Icon name="Play" size={14} />
+              Воспроизвести тест
+            </button>
+            <button
+              onClick={() => window.speechSynthesis?.cancel()}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{ background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }}
+            >
+              <Icon name="Square" size={13} />
+              Стоп
+            </button>
+            <span className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+              «Талон А — четырнадцать. Пройдите к окну два.»
+            </span>
+          </div>
         </div>
       </Section>
 
